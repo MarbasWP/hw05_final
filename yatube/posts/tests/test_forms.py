@@ -118,4 +118,3 @@ class PostFormTests(TestCase):
         )
         self.assertRedirects(response, self.DETAIL_URL)
         self.assertEqual(Comment.objects.count(), comments_count + 1)
-
