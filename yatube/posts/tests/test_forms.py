@@ -129,7 +129,9 @@ class PostFormTests(TestCase):
         )
         response_post_detail1 = self.authorized_client.get(self.DETAIL_URL)
         self.assertIsInstance(response1.context['form'], CommentForm)
-        self.assertIn(form_data['text'], response_post_detail1.content.decode())
+        self.assertIn(
+            form_data['text'],
+            response_post_detail1.content.decode())
 
     def test_add_comment_guest_client(self):
         """Комментарий не появляется на странице поста

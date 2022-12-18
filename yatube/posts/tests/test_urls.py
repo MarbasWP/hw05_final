@@ -3,7 +3,7 @@ from http import HTTPStatus
 from django.test import TestCase, Client
 from django.urls import reverse
 
-from ..models import Post, Group, User, Follow
+from ..models import Post, Group, User
 
 USERNAME = 'leo'
 SLUG = 'Yandex'

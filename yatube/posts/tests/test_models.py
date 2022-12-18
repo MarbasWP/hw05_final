@@ -46,4 +46,3 @@ class PostModelTest(TestCase):
             f' написанный {self.comment.created}'
             f' с текстом {self.comment.text[:settings.CUT_TEXT]}',
             str(self.comment))
-
