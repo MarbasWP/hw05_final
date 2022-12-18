@@ -3,7 +3,7 @@ from http import HTTPStatus
 from django.test import TestCase, Client
 from django.urls import reverse
 
-from ..models import Post, Group, User
+from ..models import Post, Group, User, Follow
 
 USERNAME = 'leo'
 SLUG = 'Yandex'
@@ -12,6 +12,9 @@ CREATE_URL = reverse('posts:post_create')
 PROFILE_URL = reverse('posts:profile', args=[USERNAME])
 GROUP_LIST_URL = reverse('posts:group_list', args=[SLUG])
 LOGIN_URL = f'{reverse("users:login")}?next='
+PROFILE_FOLLOW_URL = reverse('posts:profile_follow', args=[USERNAME])
+PROFILE_UNFOLLOW_URL = reverse('posts:profile_unfollow', args=[USERNAME])
+FOLLOW_INDEX_URL = reverse('posts:follow_index')
 
 
 class PostURLTests(TestCase):
@@ -21,6 +24,11 @@ class PostURLTests(TestCase):
         super().setUpClass()
         cls.user = User.objects.create_user(username=USERNAME)
         cls.user2 = User.objects.create_user(username='auth2')
+        cls.guest = Client()
+        cls.author = Client()
+        cls.author2 = Client()
+        cls.author.force_login(cls.user)
+        cls.author2.force_login(cls.user2)
         cls.group = Group.objects.create(
             title='YandexPracticum',
             slug='Yandex',
@@ -34,21 +42,15 @@ class PostURLTests(TestCase):
         cls.EDIT_URL = reverse('posts:post_edit', args=(cls.post.id,))
         cls.DETAIL_URL = reverse('posts:post_detail', args=(cls.post.id,))
 
-    def setUp(self):
-        """Создаем клиент гостя и зарегистрированного пользователя."""
-        self.guest = Client()
-        self.author = Client()
-        self.author2 = Client()
-        self.author.force_login(self.user)
-        self.author2.force_login(self.user2)
-
     def test_urls_redirect_response_guest(self):
         URLS = (
             (CREATE_URL, self.client,
              f'{LOGIN_URL}{CREATE_URL}'),
             (self.EDIT_URL, self.client,
              f'{LOGIN_URL}{self.EDIT_URL}'),
-            (self.EDIT_URL, self.author2, self.DETAIL_URL)
+            (self.EDIT_URL, self.author2, self.DETAIL_URL),
+            (PROFILE_FOLLOW_URL, self.author2, PROFILE_URL),
+            (PROFILE_UNFOLLOW_URL, self.author2, PROFILE_URL),
         )
         for url, client, result_url in URLS:
             with self.subTest(url=url, result_url=result_url):
@@ -66,7 +68,10 @@ class PostURLTests(TestCase):
             ('/test-no-popular', self.guest, HTTPStatus.NOT_FOUND),
             (self.EDIT_URL, self.author2, HTTPStatus.FOUND),
             (CREATE_URL, self.client, HTTPStatus.FOUND),
-            (self.EDIT_URL, self.client, HTTPStatus.FOUND)
+            (self.EDIT_URL, self.client, HTTPStatus.FOUND),
+            (PROFILE_FOLLOW_URL, self.author2, HTTPStatus.FOUND),
+            (PROFILE_UNFOLLOW_URL, self.author2, HTTPStatus.FOUND),
+            (FOLLOW_INDEX_URL, self.author2, HTTPStatus.OK)
         )
         for url, client, status in URLS:
             with self.subTest(url=url, status=status):
@@ -82,10 +87,11 @@ class PostURLTests(TestCase):
             CREATE_URL: 'posts/create_post.html',
             self.EDIT_URL: 'posts/create_post.html',
             '/test-no-popular': 'core/404.html',
+            FOLLOW_INDEX_URL: 'posts/follow.html'
         }
-        for reverse_name, template in templates_pages_names.items():
-            with self.subTest(reverse_name=reverse_name):
+        for url, template in templates_pages_names.items():
+            with self.subTest(url=url):
                 self.assertTemplateUsed(
-                    self.author.get(reverse_name),
+                    self.author.get(url),
                     template
                 )

@@ -5,48 +5,30 @@
 
   <div class="mb-5">
     <h2>Все посты пользователя {{ author.get_full_name }} </h2>
-    <h3>Всего постов: {{ author.posts.count }}</h3>
-    {% if request.user !=  author  %}
-      {% if following %}
-        <a
-            class="btn btn-lg btn-light"
-            href="{% url 'posts:profile_unfollow' author.username %}" role="button"
-        >
-          Отписаться
-        </a>
-      {% else %}
-        <a
-            class="btn btn-lg btn-primary"
-            href="{% url 'posts:profile_follow' author.username %}" role="button"
-        >
-          Подписаться
-        </a>
+    <h6>Всего постов: {{ author.posts.count }}</h6>
+    <h6>Подписок: {{ author.follower.count }} </h6>
+    <h6>Подписчиков: {{ author.following.count }} </h6>
+    <hr>
+    {% if user.is_authenticated %}
+      {% if user !=  author  %}
+        {% if following %}
+          <a class="btn btn-lg btn-light"
+             href="{% url 'posts:profile_unfollow' author.username %}"
+             role="button">
+            Отписаться
+          </a>
+        {% else %}
+          <a class="btn btn-lg btn-primary"
+             href="{% url 'posts:profile_follow' author.username %}"
+             role="button">
+            Подписаться
+          </a>
+        {% endif %}
       {% endif %}
     {% endif %}
-    <br><br>
     {% for post in page_obj %}
       <article>
-        <ul>
-          <li>
-            Автор: {{ post.author.username }}
-          </li>
-          <li>
-            Дата публикации: {{ post.pub_date|date:"d E Y" }}
-          </li>
-          {% if post.group %}
-            <li>
-              <p>Сообщество:
-                <a href="{% url 'posts:group_list' post.group.slug %}">{{ post.group.title }}</a></p>
-            </li>
-          {% endif %}
-        </ul>
-        <p>
-          {% thumbnail post.image "960x350" crop="center" upscale=True as im %}
-            <img class="card-img my-2" src="{{ im.url }}">
-          {% endthumbnail %}
-          {{ post.text|linebreaks }}
-          <a href="{% url 'posts:post_detail' post.pk %}">(Подробная инфомация)</a>
-        </p>
+        {% include 'posts/includes/post_info.html' %}
       </article>
       {% if not forloop.last %}<hr>{% endif %}
     {% endfor %}

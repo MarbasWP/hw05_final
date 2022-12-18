@@ -64,7 +64,10 @@ class Post(models.Model):
         verbose_name_plural = 'Посты'
 
     def __str__(self):
-        return self.text[:settings.CUT_TEXT]
+        return (
+            f' Автор поста {self.author} '
+            f' группы {self.group} написанный {self.pub_date} '
+            f'с текстом {self.text[:settings.CUT_TEXT]}')
 
 
 class Comment(models.Model):
@@ -96,7 +99,10 @@ class Comment(models.Model):
         verbose_name_plural = 'Комментарии'
 
     def __str__(self):
-        return self.text[:settings.CUT_TEXT]
+        return (
+            f' Автор коммента {self.author}'
+            f' написанный {self.created}'
+            f' с текстом {self.text[:settings.CUT_TEXT]}')
 
 
 class Follow(models.Model):
@@ -116,3 +122,6 @@ class Follow(models.Model):
     class Meta:
         verbose_name = 'Подписчик'
         verbose_name_plural = 'Подписчики'
+
+    def __str__(self):
+        return f'{self.user} подписался на {self.author}'

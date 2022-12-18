@@ -10,7 +10,7 @@
     </p>
     {% for post in page_obj %}
       <article>
-        {% include 'includes/post_list.html' %}
+        {% include 'posts/includes/post_info.html' %}
         {% if not forloop.last %} <hr> {% endif %}
       </article>
     {% endfor %}

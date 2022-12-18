@@ -18,6 +18,7 @@
               {% else %}
                 {% url 'posts:post_create' %}
               {% endif %}">
+            {{ form.non_field_errors }}
               {% csrf_token %}
               {% for field in form %}
                 <div class="form-group row my-3 p-3 textarea">

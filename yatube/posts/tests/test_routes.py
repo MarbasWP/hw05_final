@@ -12,6 +12,9 @@ ROUTES = (
     (f'/posts/{POST_ID}/', 'post_detail', [POST_ID]),
     ('/create/', 'post_create', None),
     (f'/posts/{POST_ID}/edit/', 'post_edit', [POST_ID]),
+    ('/follow/', 'follow_index', None),
+    (f'/profile/{USERNAME}/follow/', 'profile_follow', [USERNAME]),
+    (f'/profile/{USERNAME}/unfollow/', 'profile_unfollow', [USERNAME]),
 )
 
 

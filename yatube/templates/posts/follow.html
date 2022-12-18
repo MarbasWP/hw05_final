@@ -2,18 +2,18 @@
 {% block title %} Избранные авторы {% endblock %}
 {% block content %}
   {% load thumbnail %}
-  <div class="container py-5">
   <h1> Избранные авторы </h1>
+  {% include 'posts/includes/switcher.html' %}
   <article>
-  {% include 'includes/switcher.html' %}
-  {% for post in page_obj %}
-    {% include 'includes/post_list.html' %}
-    {% if post.group %}
-      <a href="{% url 'posts:group_list' post.group.slug %}">все записи группы</a>
-    {% endif %}
-
-    {% if not forloop.last %}<hr>{% endif %}
-  {% endfor %}
-    {% include 'includes/paginator.html' %}
+    {% for post in page_obj %}
+      {% include 'posts/includes/post_info.html' %}
+      {% if post.group %}
+        <a href="{% url 'posts:group_list' post.group.slug %}">
+          #{{ post.group }}
+        </a>
+      {% endif %}
+      {% if not forloop.last %}<hr>{% endif %}
+    {% endfor %}
   </article>
+  {% include 'includes/paginator.html' %}
 {% endblock %}
