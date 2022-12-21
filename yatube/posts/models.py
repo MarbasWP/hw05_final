@@ -1,9 +1,19 @@
 from django.db import models
 from django.contrib.auth import get_user_model
-from django.conf import settings
 
 
 User = get_user_model()
+TEXT_POST = (
+    'Автор поста {} группы {} '
+    'написанный {} '
+    'с текстом {:.15}')
+TEXT_COMMENT = (
+    'Автор коммента {} '
+    'написанный {} с текстом {:.15}'
+)
+TEXT_FOLLOW = (
+    '{} подписался на {}'
+)
 
 
 class Group(models.Model):
@@ -64,10 +74,9 @@ class Post(models.Model):
         verbose_name_plural = 'Посты'
 
     def __str__(self):
-        return (
-            f' Автор поста {self.author} '
-            f' группы {self.group} написанный {self.pub_date} '
-            f'с текстом {self.text[:settings.CUT_TEXT]}')
+        return TEXT_POST.format(
+            self.author, self.group,
+            self.pub_date, self.text)
 
 
 class Comment(models.Model):
@@ -100,9 +109,7 @@ class Comment(models.Model):
 
     def __str__(self):
         return (
-            f' Автор коммента {self.author}'
-            f' написанный {self.created}'
-            f' с текстом {self.text[:settings.CUT_TEXT]}')
+            TEXT_COMMENT.format(self.author, self.created, self.text))
 
 
 class Follow(models.Model):
@@ -124,4 +131,4 @@ class Follow(models.Model):
         verbose_name_plural = 'Подписчики'
 
     def __str__(self):
-        return f'{self.user} подписался на {self.author}'
+        return TEXT_FOLLOW.format(str(self.user), self.author)

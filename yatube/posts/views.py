@@ -32,8 +32,9 @@ def profile(request, username):
     return render(request, 'posts/profile.html', {
         'author': author,
         'page_obj': page(request, author.posts.all()),
-        'following': request.user.is_authenticated and author.following.filter(
-            user_id=request.user.id).exists(),
+        'following': request.user.is_authenticated and Follow.objects.filter(
+            user=request.user, author=(User.objects.get(username=username))
+        ).exists(),
     })
 
 
@@ -118,10 +119,11 @@ def profile_follow(request, username):
 
 @login_required
 def profile_unfollow(request, username):
-    author_following = get_object_or_404(User, username=username)
-    if (Follow.objects.filter(
-            author=author_following, user=request.user).exists()
-            or request.user == author_following):
-        Follow.objects.filter(
-            author=author_following, user=request.user).delete()
+    author_following = Follow.objects.filter(
+        user=request.user,
+        author=(get_object_or_404(User, username=username))
+    )
+    if author_following.exists():
+        author_following.delete()
     return redirect('posts:profile', username=username)
+

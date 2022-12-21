@@ -3,7 +3,7 @@ from http import HTTPStatus
 from django.test import TestCase, Client
 from django.urls import reverse
 
-from ..models import Post, Group, User
+from ..models import Post, Group, User, Follow
 
 USERNAME = 'leo'
 SLUG = 'Yandex'
@@ -38,6 +38,10 @@ class PostURLTests(TestCase):
             author=cls.user,
             text='New post'
         )
+        cls.follow = Follow.objects.create(
+            user=cls.user2,
+            author=cls.user
+        )
 
         cls.EDIT_URL = reverse('posts:post_edit', args=(cls.post.id,))
         cls.DETAIL_URL = reverse('posts:post_detail', args=(cls.post.id,))
@@ -49,8 +53,11 @@ class PostURLTests(TestCase):
             (self.EDIT_URL, self.client,
              f'{LOGIN_URL}{self.EDIT_URL}'),
             (self.EDIT_URL, self.author2, self.DETAIL_URL),
+            (FOLLOW_INDEX_URL, self.client, f'{LOGIN_URL}{FOLLOW_INDEX_URL}'),
             (PROFILE_FOLLOW_URL, self.author2, PROFILE_URL),
             (PROFILE_UNFOLLOW_URL, self.author2, PROFILE_URL),
+            (PROFILE_FOLLOW_URL, self.client, f'{LOGIN_URL}{PROFILE_FOLLOW_URL}'),
+            (PROFILE_UNFOLLOW_URL, self.client, f'{LOGIN_URL}{PROFILE_UNFOLLOW_URL}'),
         )
         for url, client, result_url in URLS:
             with self.subTest(url=url, result_url=result_url):
@@ -59,22 +66,27 @@ class PostURLTests(TestCase):
 
     def test_urls_response(self):
         URLS = (
-            (INDEX_URL, self.guest, HTTPStatus.OK),
-            (PROFILE_URL, self.guest, HTTPStatus.OK),
-            (GROUP_LIST_URL, self.guest, HTTPStatus.OK),
-            (self.DETAIL_URL, self.guest, HTTPStatus.OK),
-            (CREATE_URL, self.author, HTTPStatus.OK),
-            (self.EDIT_URL, self.author, HTTPStatus.OK),
             ('/test-no-popular', self.guest, HTTPStatus.NOT_FOUND),
-            (self.EDIT_URL, self.author2, HTTPStatus.FOUND),
             (CREATE_URL, self.client, HTTPStatus.FOUND),
-            (self.EDIT_URL, self.client, HTTPStatus.FOUND),
+            (CREATE_URL, self.author, HTTPStatus.OK),
+            (FOLLOW_INDEX_URL, self.author2, HTTPStatus.OK),
+            (FOLLOW_INDEX_URL, self.guest, HTTPStatus.FOUND),
+            (GROUP_LIST_URL, self.guest, HTTPStatus.OK),
+            (INDEX_URL, self.guest, HTTPStatus.OK),
             (PROFILE_FOLLOW_URL, self.author2, HTTPStatus.FOUND),
             (PROFILE_UNFOLLOW_URL, self.author2, HTTPStatus.FOUND),
-            (FOLLOW_INDEX_URL, self.author2, HTTPStatus.OK)
+            (PROFILE_FOLLOW_URL, self.guest, HTTPStatus.FOUND),
+            (PROFILE_UNFOLLOW_URL, self.guest, HTTPStatus.FOUND),
+            (PROFILE_FOLLOW_URL, self.author, HTTPStatus.FOUND),
+            (PROFILE_UNFOLLOW_URL, self.author, HTTPStatus.FOUND),
+            (PROFILE_URL, self.guest, HTTPStatus.OK),
+            (self.DETAIL_URL, self.guest, HTTPStatus.OK),
+            (self.EDIT_URL, self.author, HTTPStatus.OK),
+            (self.EDIT_URL, self.author2, HTTPStatus.FOUND),
+            (self.EDIT_URL, self.client, HTTPStatus.FOUND),
         )
         for url, client, status in URLS:
-            with self.subTest(url=url, status=status):
+            with self.subTest(url=url, client=client, status=status):
                 self.assertEqual(client.get(url).status_code, status)
 
     def test_urls_uses_correct_template(self):

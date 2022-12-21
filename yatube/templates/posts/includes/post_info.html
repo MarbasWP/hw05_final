@@ -15,4 +15,10 @@
   {{ post.text|linebreaksbr }}
 </div>
 <a href="{% url 'posts:post_detail' post.pk %}">(Подробная информация)</a>
+{% if post.group %}
+  <a href="{% url 'posts:group_list' post.group.slug %}">
+  <br>
+    #{{ post.group }}
+  </a>
+{% endif %}
 <br>

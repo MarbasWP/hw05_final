@@ -12,29 +12,27 @@
             {% if post %} Сохранить пост {% else %} Добавить пост {% endif %}
           </div>
           <div class="card-body">
+            {% include 'includes/errors.html' %}
             <form method="post" enctype="multipart/form-data" action="
               {% if post %}
                 {% url 'posts:post_edit' post.pk %}
               {% else %}
                 {% url 'posts:post_create' %}
               {% endif %}">
-            {{ form.non_field_errors }}
               {% csrf_token %}
               {% for field in form %}
-                <div class="form-group row my-3 p-3 textarea">
-                  <label for="{{ field.id_for_label }}">
-                    {{ field.label }}
-                    {% if field.field.required %}
-                      <span class="required text-danger">*</span>
-                    {% endif %}
-                  </label>
-                  {{ field|addclass:'form-control' }}
-                  {% if field.help_text %}
-                    <small id="{{ field.id_for_label }}-help" class="form-text text-muted">
-                      {{ field.help_text|safe }}
-                    </small>
+                <label for="{{ field.id_for_label }}">
+                  {{ field.label }}
+                  {% if field.field.required %}
+                    <span class="required text-danger">*</span>
                   {% endif %}
-                </div>
+                </label>
+                {{ field|addclass:'form-control' }}
+                {% if field.help_text %}
+                  <small id="{{ field.id_for_label }}-help" class="form-text text-muted">
+                    {{ field.help_text|safe }}
+                  </small>
+                {% endif %}
               {% endfor %}
               <div class="d-flex justify-content-end">
                 <button type="submit" class="btn btn-primary">

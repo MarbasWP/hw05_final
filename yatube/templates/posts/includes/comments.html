@@ -1,6 +1,6 @@
 {% load user_filters %}
 <div class="card my-3">
-  <h5 class="card-header">Комментариев к записи: {{ post.comments.count }}</h5>
+  <h5 class="card-header">Комментариев к записи: {{ comments.count }}</h5>
   {% for comment in comments %}
     <div class="card-body">
       <div class="card my-sm-0">

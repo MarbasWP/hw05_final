@@ -1,9 +1,11 @@
-from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import TestCase, Client
-from django.urls import reverse
-from django import forms
+import tempfile
 
-from ..forms import CommentForm
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import TestCase, Client, override_settings
+from django import forms
+from django.urls import reverse
+from django.conf import settings
+
 from ..models import Post, Group, User, Comment
 
 FORM_FIELDS = {
@@ -17,6 +19,7 @@ CREATE_URL = reverse('posts:post_create')
 PROFILE_URL = reverse('posts:profile', args=[USERNAME])
 GROUP_LIST_URL = reverse('posts:group_list', args=[SLUG])
 LOGIN_URL = f'{reverse("users:login")}?next='
+TEMP_MEDIA_ROOT = tempfile.mkdtemp(dir=settings.BASE_DIR)
 SMALL_GIF = (
     b'\x47\x49\x46\x38\x39\x61\x02\x00'
     b'\x01\x00\x80\x00\x00\x00\x00\x00'
@@ -27,16 +30,19 @@ SMALL_GIF = (
 )
 
 
+@override_settings(MEDIA_ROOT=TEMP_MEDIA_ROOT)
 class PostFormTests(TestCase):
     """Создаем тестовые посты, группу и форму."""
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.user = User.objects.create_user(username=USERNAME)
-        cls.user2 = User.objects.create_user(username='auth2')
         cls.guest_client = Client()
         cls.authorized_client = Client()
+        cls.author2 = Client()
+        cls.user = User.objects.create_user(username=USERNAME)
+        cls.user2 = User.objects.create_user(username='auth2')
         cls.authorized_client.force_login(cls.user)
+        cls.author2.force_login(cls.user2)
         cls.group = Group.objects.create(
             title='YandexPracticum',
             slug=SLUG,
@@ -51,16 +57,15 @@ class PostFormTests(TestCase):
             content=SMALL_GIF,
             content_type='image/gif'
         )
-        cls.image_edit = SimpleUploadedFile(
-            name='edit.gif',
+        cls.another_uploaded = SimpleUploadedFile(
+            name='another_small.gif',
             content=SMALL_GIF,
-            content_type='image/gif',
+            content_type='image/gif'
         )
         cls.post = Post.objects.create(
             author=cls.user,
             text='New post',
             group=cls.group,
-            image=cls.image,
         )
         cls.EDIT_URL = reverse('posts:post_edit', args=(cls.post.id,))
         cls.DETAIL_URL = reverse('posts:post_detail', args=(cls.post.id,))
@@ -73,7 +78,7 @@ class PostFormTests(TestCase):
         form_data = {
             'text': 'New text',
             'group': self.group.id,
-            'image': self.post.image,
+            'image': self.image,
         }
         response = self.authorized_client.post(
             CREATE_URL,
@@ -86,14 +91,15 @@ class PostFormTests(TestCase):
         post = set_posts.pop()
         self.assertEqual(post.text, form_data['text'])
         self.assertEqual(post.group.id, form_data['group'])
-        self.assertEqual(post.author, self.user)
+        self.assertEqual(post.author.username, self.user.username)
+        self.assertEqual(post.image.name, f'posts/{form_data["image"]}')
 
     def test_edit_post(self):
         """Валидная форма редактирует запись в Post."""
         form_data = {
             'text': 'Edit post',
             'group': self.group2.id,
-            'image': self.image_edit,
+            'image': self.another_uploaded,
         }
         response = self.authorized_client.post(
             self.EDIT_URL,
@@ -105,6 +111,7 @@ class PostFormTests(TestCase):
         self.assertEqual(post.text, form_data['text'])
         self.assertEqual(post.group.pk, form_data['group'])
         self.assertEqual(post.author, self.post.author)
+        self.assertEqual(post.image.name, f'posts/{form_data["image"].name}')
 
     def test_post_edit_page_show_correct_context(self):
         """Шаблон create_post(edit) сформирован с правильным контекстом."""
@@ -117,58 +124,71 @@ class PostFormTests(TestCase):
 
     def test_comment_show_up(self):
         """Комментарий появляется на странице поста"""
+        before_creating = set(Comment.objects.all())
         form_data = {
-            'author': self.user,
-            'post': self.post,
             'text': 'Комментарий',
         }
-        response1 = self.authorized_client.post(
+        response = self.authorized_client.post(
             self.ADD_COMMENT_URL,
             data=form_data,
             follow=True
         )
-        response_post_detail1 = self.authorized_client.get(self.DETAIL_URL)
-        self.assertIsInstance(response1.context['form'], CommentForm)
-        self.assertIn(
-            form_data['text'],
-            response_post_detail1.content.decode())
+        after_creating = set(Comment.objects.all())
+        differences_of_sets = after_creating.difference(before_creating)
+        self.assertEqual(len(differences_of_sets), 1)
+        comment = differences_of_sets.pop()
+        self.assertEqual(comment.text, form_data['text'])
+        self.assertEqual(comment.author, self.user)
+        self.assertEqual(comment.post, self.post)
+        self.assertRedirects(response, self.DETAIL_URL)
 
     def test_add_comment_guest_client(self):
         """Комментарий не появляется на странице поста
         (неавторизованным пользователем)."""
+        before_creating = set(Comment.objects.all())
         form_data = {
-            'author': self.user,
-            'post': self.post,
             'text': 'Комментарий',
         }
         self.guest_client.post(
             self.ADD_COMMENT_URL,
             data=form_data,
             follow=True)
-        self.assertFalse(Comment.objects.filter(id=self.post.id).exists())
         self.assertNotIn(
             form_data['text'],
             self.guest_client.get(self.DETAIL_URL).content.decode())
+        self.assertEqual(set(Comment.objects.all()), before_creating)
 
-    def test_create_and_edit_post_guest_client(self):
+    def test_edit_post_guest_client(self):
         """Запись поста не создаётся и не редактируется
         для неавторизованного пользователя."""
-        posts_count = Post.objects.count()
-        edit_image = SimpleUploadedFile(
-            name='small.gif',
-            content=SMALL_GIF,
-            content_type='image/gif'
-        )
-        objects = {
-            CREATE_URL: f'{LOGIN_URL}{CREATE_URL}',
-            self.EDIT_URL: f'{LOGIN_URL}{self.EDIT_URL}',
+        form_data = {
+            'text': 'testing',
+            'group': self.group2.id,
+            'image': self.another_uploaded,
         }
-        for reverse_name, redirect_url in objects.items():
-            with self.subTest(reverse_name=reverse_name):
-                response = self.guest_client.post(
-                    reverse_name,
-                    data={'text': 'testing', 'image': edit_image},
-                    follow=True
-                )
-                self.assertRedirects(response, redirect_url)
-                self.assertEqual(Post.objects.count(), posts_count)
+        objects = {
+            (self.author2, f'{LOGIN_URL}{self.EDIT_URL}'),
+            (self.guest_client, f'{LOGIN_URL}{self.EDIT_URL}')
+        }
+        for client, expected_redirect in objects:
+            with self.subTest(client=client):
+                response = self.client.post(self.EDIT_URL,
+                                            data=form_data, follow=True)
+                post = Post.objects.get(id=self.post.id)
+                self.assertEqual(post.text, self.post.text)
+                self.assertEqual(post.author, self.post.author)
+                self.assertEqual(post.group.id, self.post.group.id)
+                self.assertRedirects(response, expected_redirect)
+
+    def test_guest_create_post_form(self):
+        form_data = {
+            'text': 'Текст для нового поста',
+            'group': self.group.id,
+            'image': self.image
+        }
+        before_creating = set(Post.objects.all())
+        response = self.guest_client.post(CREATE_URL,
+                                          data=form_data, follow=True)
+        after_creating = set(Post.objects.all())
+        self.assertEqual(before_creating, after_creating)
+        self.assertRedirects(response, f'{LOGIN_URL}{CREATE_URL}')

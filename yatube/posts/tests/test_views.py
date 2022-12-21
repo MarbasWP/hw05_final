@@ -60,7 +60,7 @@ class ViewsTest(TestCase):
             group=cls.group,
             image=cls.image,
         )
-        cls.follow = Follow.objects.get_or_create(
+        cls.follow = Follow.objects.create(
             user=cls.user2,
             author=cls.user
         )
@@ -114,6 +114,7 @@ class ViewsTest(TestCase):
 
     def test_correct_page_context_guest_client(self):
         """Проверка количества постов на первой и второй страницах."""
+        cache.clear()
         Post.objects.bulk_create(Post(
             text=f'Тестовый текст {i}',
             group=self.group,
@@ -139,22 +140,52 @@ class ViewsTest(TestCase):
 
     def test_cache(self):
         """Проверка работы кеша для главной страницы."""
-        post = Post.objects.create(author=self.user, text='какой-то текст')
-        posts = (self.authorized_client.get(INDEX_URL)).content
-        post.delete()
-        posts_cache = (self.authorized_client.get(INDEX_URL)).content
         cache.clear()
-        posts_updated = (
-            self.authorized_client.get(INDEX_URL)).content
-        self.assertEqual(posts, posts_cache)
-        self.assertNotEqual(posts_cache, posts_updated)
+        response = self.client.get(INDEX_URL)
+        post1 = Post.objects.last()
+        post1.delete()
+        self.assertEqual(
+            response.context['page_obj'][0].text, post1.text)
+        cache.clear()
+        response = self.client.get(INDEX_URL)
+        self.assertNotContains(response, post1.text)
 
-    def test_users_can_follow_and_unfollow(self):
-        """Зарегистрированный пользователь может подписаться и отписаться."""
-        follower_count = Follow.objects.count()
-        self.authorized_client.post(PROFILE_FOLLOW_URL)
-        self.assertEqual(Follow.objects.count(), follower_count + 1)
+
+class FollowsViewsTest(TestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.first_user = User.objects.create_user(username=USERNAME)
+        cls.second_user = User.objects.create_user(username=USERNAME2)
+        cls.post = Post.objects.create(
+            author=cls.first_user,
+            text='Тестовый текст',
+        )
+        cls.follow = Follow.objects.create(
+            user=cls.first_user,
+            author=cls.second_user
+        )
+
+    def setUp(self):
+        self.author_client = Client()
+        self.author_client.force_login(self.second_user)
+        self.follower_client = Client()
+        self.follower_client.force_login(self.first_user)
+
+    def test_follow(self):
+        """Авторизованный пользователь может подписаться"""
+        self.assertEqual(Follow.objects.count(), 1)
         self.assertTrue(
-            Follow.objects.filter(user=self.user2, author=self.user).exists())
-        self.authorized_client.post(PROFILE_UNFOLLOW_URL)
-        self.assertEqual(Follow.objects.count(), follower_count)
+            Follow.objects.filter(user=self.first_user, author=self.second_user).exists())
+
+    def test_unfollow(self):
+        self.follower_client.post(PROFILE_UNFOLLOW_URL)
+        self.assertEqual(Follow.objects.count(), 0)
+
+    def test_follow_list(self):
+        post = Post.objects.create(
+            author=self.first_user,
+            text='Тестовый текст'
+        )
+        response = self.follower_client.get(FOLLOW_INDEX_URL)
+        self.assertNotIn(post, response.context['page_obj'].object_list)

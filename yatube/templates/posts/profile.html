@@ -1,6 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Профайл пользователя {{ author.get_full_name }}{% endblock %}
-{% load thumbnail %}
+{% block title %}Профиль пользователя {{ author.get_full_name }}{% endblock %}
 {% block content %}
 
   <div class="mb-5">
@@ -8,24 +7,22 @@
     <h6>Всего постов: {{ author.posts.count }}</h6>
     <h6>Подписок: {{ author.follower.count }} </h6>
     <h6>Подписчиков: {{ author.following.count }} </h6>
-    <hr>
     {% if user.is_authenticated %}
-      {% if user !=  author  %}
-        {% if following %}
-          <a class="btn btn-lg btn-light"
-             href="{% url 'posts:profile_unfollow' author.username %}"
-             role="button">
-            Отписаться
-          </a>
-        {% else %}
-          <a class="btn btn-lg btn-primary"
-             href="{% url 'posts:profile_follow' author.username %}"
-             role="button">
-            Подписаться
-          </a>
-        {% endif %}
+      {% if following %}
+        <a class="btn btn-lg btn-light"
+           href="{% url 'posts:profile_unfollow' author.username %}"
+           role="button">
+          Отписаться
+        </a>
+      {% else %}
+        <a class="btn btn-lg btn-primary"
+           href="{% url 'posts:profile_follow' author.username %}"
+           role="button">
+          Подписаться
+        </a>
       {% endif %}
     {% endif %}
+    <hr>
     {% for post in page_obj %}
       <article>
         {% include 'posts/includes/post_info.html' %}
