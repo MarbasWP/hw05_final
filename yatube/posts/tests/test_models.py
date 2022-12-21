@@ -1,4 +1,3 @@
-from django.conf import settings
 from django.test import TestCase
 
 from ..models import Group, Post, User, Comment, Follow
@@ -48,8 +47,10 @@ class PostModelTest(TestCase):
 
     def test_models_have_correct_post_names(self):
         """Проверяем, что у моделей корректно работает __str__."""
-        self.assertEqual(TEXT_POST.format(str(self.post.author), self.post.group, self.post.pub_date, self.post.text),
-                         str(self.post))
+        self.assertEqual(
+            TEXT_POST.format(str(self.post.author),
+                             self.post.group, self.post.pub_date,
+                             self.post.text), str(self.post))
 
     def test_models_have_correct_group_names(self):
         """Проверка заполнения str group"""

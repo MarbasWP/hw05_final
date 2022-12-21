@@ -56,8 +56,10 @@ class PostURLTests(TestCase):
             (FOLLOW_INDEX_URL, self.client, f'{LOGIN_URL}{FOLLOW_INDEX_URL}'),
             (PROFILE_FOLLOW_URL, self.author2, PROFILE_URL),
             (PROFILE_UNFOLLOW_URL, self.author2, PROFILE_URL),
-            (PROFILE_FOLLOW_URL, self.client, f'{LOGIN_URL}{PROFILE_FOLLOW_URL}'),
-            (PROFILE_UNFOLLOW_URL, self.client, f'{LOGIN_URL}{PROFILE_UNFOLLOW_URL}'),
+            (PROFILE_FOLLOW_URL, self.client,
+             f'{LOGIN_URL}{PROFILE_FOLLOW_URL}'),
+            (PROFILE_UNFOLLOW_URL, self.client,
+             f'{LOGIN_URL}{PROFILE_UNFOLLOW_URL}'),
         )
         for url, client, result_url in URLS:
             with self.subTest(url=url, result_url=result_url):
