@@ -7,7 +7,8 @@
     <h6>Всего постов: {{ author.posts.count }}</h6>
     <h6>Подписок: {{ author.follower.count }} </h6>
     <h6>Подписчиков: {{ author.following.count }} </h6>
-    {% if user.is_authenticated %}
+    <h6>Комментариев: {{ author.comments.count }} </h6>
+    {% if user.is_authenticated and user !=  author %}
       {% if following %}
         <a class="btn btn-lg btn-light"
            href="{% url 'posts:profile_unfollow' author.username %}"

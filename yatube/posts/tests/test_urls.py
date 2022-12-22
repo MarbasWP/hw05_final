@@ -15,6 +15,10 @@ LOGIN_URL = f'{reverse("users:login")}?next='
 PROFILE_FOLLOW_URL = reverse('posts:profile_follow', args=[USERNAME])
 PROFILE_UNFOLLOW_URL = reverse('posts:profile_unfollow', args=[USERNAME])
 FOLLOW_INDEX_URL = reverse('posts:follow_index')
+LOG_CREATE_URL = f'{LOGIN_URL}{CREATE_URL}'
+LOG_FOLLOW_INDEX_URL = f'{LOGIN_URL}{FOLLOW_INDEX_URL}'
+LOG_PROFILE_FOLLOW_URL = f'{LOGIN_URL}{PROFILE_FOLLOW_URL}'
+LOG_PROFILE_UNFOLLOW_URL = f'{LOGIN_URL}{PROFILE_UNFOLLOW_URL}'
 
 
 class PostURLTests(TestCase):
@@ -45,26 +49,23 @@ class PostURLTests(TestCase):
 
         cls.EDIT_URL = reverse('posts:post_edit', args=(cls.post.id,))
         cls.DETAIL_URL = reverse('posts:post_detail', args=(cls.post.id,))
+        cls.LOG_EDIT_URL = f'{LOGIN_URL}{cls.EDIT_URL}'
 
     def test_urls_redirect_response_guest(self):
         URLS = (
-            (CREATE_URL, self.client,
-             f'{LOGIN_URL}{CREATE_URL}'),
-            (self.EDIT_URL, self.client,
-             f'{LOGIN_URL}{self.EDIT_URL}'),
+            (CREATE_URL, self.client, LOG_CREATE_URL),
+            (self.EDIT_URL, self.client, self.LOG_EDIT_URL),
             (self.EDIT_URL, self.author2, self.DETAIL_URL),
-            (FOLLOW_INDEX_URL, self.client, f'{LOGIN_URL}{FOLLOW_INDEX_URL}'),
+            (FOLLOW_INDEX_URL, self.client, LOG_FOLLOW_INDEX_URL),
             (PROFILE_FOLLOW_URL, self.author2, PROFILE_URL),
             (PROFILE_UNFOLLOW_URL, self.author2, PROFILE_URL),
-            (PROFILE_FOLLOW_URL, self.client,
-             f'{LOGIN_URL}{PROFILE_FOLLOW_URL}'),
-            (PROFILE_UNFOLLOW_URL, self.client,
-             f'{LOGIN_URL}{PROFILE_UNFOLLOW_URL}'),
+            (PROFILE_FOLLOW_URL, self.client, LOG_PROFILE_FOLLOW_URL),
+            (PROFILE_UNFOLLOW_URL, self.client, LOG_PROFILE_UNFOLLOW_URL),
         )
         for url, client, result_url in URLS:
             with self.subTest(url=url, result_url=result_url):
                 self.assertRedirects(client.get(
-                    url), result_url, HTTPStatus.FOUND)
+                    url), result_url)
 
     def test_urls_response(self):
         URLS = (

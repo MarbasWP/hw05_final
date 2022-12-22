@@ -7,11 +7,8 @@ from django.urls import reverse
 from django.conf import settings
 
 from ..models import Post, Group, User, Comment
+from ..urls import app_name
 
-FORM_FIELDS = {
-    'text': forms.fields.CharField,
-    'group': forms.fields.ChoiceField
-}
 SLUG = 'Yandex'
 USERNAME = 'leo'
 INDEX_URL = reverse('posts:index')
@@ -91,8 +88,8 @@ class PostFormTests(TestCase):
         post = set_posts.pop()
         self.assertEqual(post.text, form_data['text'])
         self.assertEqual(post.group.id, form_data['group'])
-        self.assertEqual(post.author.username, self.user.username)
-        self.assertEqual(post.image.name, f'posts/{form_data["image"]}')
+        self.assertEqual(post.author, self.user)
+        self.assertEqual(post.image.name, f'{app_name}/{form_data["image"]}')
 
     def test_edit_post(self):
         """Валидная форма редактирует запись в Post."""
@@ -111,13 +108,18 @@ class PostFormTests(TestCase):
         self.assertEqual(post.text, form_data['text'])
         self.assertEqual(post.group.pk, form_data['group'])
         self.assertEqual(post.author, self.post.author)
-        self.assertEqual(post.image.name, f'posts/{form_data["image"].name}')
+        self.assertEqual(post.image.name, f'{app_name}/{form_data["image"]}')
 
     def test_post_edit_page_show_correct_context(self):
         """Шаблон create_post(edit) сформирован с правильным контекстом."""
+        form_fields = {
+            'text': forms.fields.CharField,
+            'group': forms.fields.ChoiceField,
+            'image': forms.fields.ImageField,
+        }
         for url in (self.EDIT_URL, CREATE_URL):
             response = self.authorized_client.get(url)
-            for value, expected in FORM_FIELDS.items():
+            for value, expected in form_fields.items():
                 with self.subTest(value=value):
                     form_field = response.context.get('form').fields.get(value)
                     self.assertIsInstance(form_field, expected)
@@ -178,6 +180,7 @@ class PostFormTests(TestCase):
                 self.assertEqual(post.text, self.post.text)
                 self.assertEqual(post.author, self.post.author)
                 self.assertEqual(post.group.id, self.post.group.id)
+                self.assertEqual(post.image.name, self.post.image.name)
                 self.assertRedirects(response, expected_redirect)
 
     def test_guest_create_post_form(self):
