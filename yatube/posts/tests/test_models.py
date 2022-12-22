@@ -49,9 +49,10 @@ class PostModelTest(TestCase):
     def test_models_have_correct_post_names(self):
         """Проверяем, что у моделей корректно работает __str__."""
         self.assertEqual(
-            TEXT_POST.format(author=self.post.author.username,
-                             group=self.post.group, pub_date=self.post.pub_date,
-                             text=self.post.text[:settings.CUT_TEXT]), str(self.post))
+            TEXT_POST.format(
+                author=self.post.author.username,
+                group=self.post.group, pub_date=self.post.pub_date,
+                text=self.post.text[:settings.CUT_TEXT]), str(self.post))
 
     def test_models_have_correct_group_names(self):
         """Проверка заполнения str group"""
@@ -61,12 +62,15 @@ class PostModelTest(TestCase):
         """Проверка заполнения str group"""
         self.assertEqual(
             TEXT_COMMENT.format(
-                author=self.comment.author.username, created=self.comment.created,
-                text=self.comment.text[:settings.CUT_TEXT]), str(self.comment))
+                author=self.comment.author.username,
+                created=self.comment.created,
+                text=self.comment.text[:settings.CUT_TEXT]),
+            str(self.comment))
 
     def test_models_have_correct_follow_names(self):
         """Проверка заполнения str group"""
         self.assertEqual(
             TEXT_FOLLOW.format(
-                user=self.follow.user.username, author=str(self.follow.author)),
+                user=self.follow.user.username,
+                author=str(self.follow.author)),
             str(self.follow))

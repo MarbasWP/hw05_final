@@ -176,7 +176,8 @@ class FollowsViewsTest(TestCase):
     def test_follow(self):
         """Авторизованный пользователь может подписаться"""
         self.assertEqual(Follow.objects.count(), 1)
-        self.assertTrue(Follow.objects.get(author=self.second_user, user=self.first_user))
+        self.assertTrue(Follow.objects.get(
+            author=self.second_user, user=self.first_user))
 
     def test_unfollow(self):
         self.follower_client.post(PROFILE_UNFOLLOW_URL)
