@@ -7,7 +7,6 @@ from django.urls import reverse
 from django.conf import settings
 
 from ..models import Post, Group, User, Comment
-from ..urls import app_name
 
 SLUG = 'Yandex'
 USERNAME = 'leo'
@@ -89,7 +88,9 @@ class PostFormTests(TestCase):
         self.assertEqual(post.text, form_data['text'])
         self.assertEqual(post.group.id, form_data['group'])
         self.assertEqual(post.author, self.user)
-        self.assertEqual(post.image.name, f'{app_name}/{form_data["image"]}')
+        self.assertEqual(
+            post.image.name,
+            f'{Post._meta.get_field("image").upload_to}{form_data["image"]}')
 
     def test_edit_post(self):
         """Валидная форма редактирует запись в Post."""
@@ -108,7 +109,9 @@ class PostFormTests(TestCase):
         self.assertEqual(post.text, form_data['text'])
         self.assertEqual(post.group.pk, form_data['group'])
         self.assertEqual(post.author, self.post.author)
-        self.assertEqual(post.image.name, f'{app_name}/{form_data["image"]}')
+        self.assertEqual(
+            post.image.name,
+            f'{Post._meta.get_field("image").upload_to}{form_data["image"]}')
 
     def test_post_edit_page_show_correct_context(self):
         """Шаблон create_post(edit) сформирован с правильным контекстом."""
@@ -160,9 +163,7 @@ class PostFormTests(TestCase):
             self.guest_client.get(self.DETAIL_URL).content.decode())
         self.assertEqual(set(Comment.objects.all()), before_creating)
 
-    def test_edit_post_guest_client(self):
-        """Запись поста не создаётся и не редактируется
-        для неавторизованного пользователя."""
+    def test_edit_post_form(self):
         form_data = {
             'text': 'testing',
             'group': self.group2.id,

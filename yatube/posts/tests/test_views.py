@@ -82,14 +82,12 @@ class ViewsTest(TestCase):
         self.assertEqual(group.description, self.group.description)
 
     def test_post_not_appear_in_list(self):
-        """Пост НЕ появляется в другой группе."""
         for url in (FOLLOW_INDEX_URL, GROUP_LIST_URL2):
             self.assertNotIn(
                 self.post,
                 self.authorized_client.get(url).context['page_obj'])
 
-    def test_post_created_correctly(self):
-        """Пост при создании добавлен корректно"""
+    def test_post_correctly(self):
         URLS = (
             (INDEX_URL, 'page_obj'),
             (GROUP_LIST_URL, 'page_obj'),
@@ -97,12 +95,13 @@ class ViewsTest(TestCase):
             (self.DETAIL_URL, 'post'),
             (FOLLOW_INDEX_URL, 'page_obj')
         )
+        count_post = Post.objects.count()
         for url, context in URLS:
             with self.subTest(url=url):
                 response = self.author2.get(url)
                 if context == 'page_obj':
                     paginator_page = response.context.get(context)
-                    self.assertEqual(len(list(paginator_page)), 1)
+                    self.assertEqual(len(list(paginator_page)), count_post)
                     post = paginator_page[0]
                 elif context == 'post':
                     post = response.context.get(context)
@@ -112,7 +111,7 @@ class ViewsTest(TestCase):
                 self.assertEqual(post.id, self.post.id)
                 self.assertEqual(post.image, self.post.image)
 
-    def test_correct_page_context_guest_client(self):
+    def test_paginator_correct_context(self):
         """Проверка количества постов на первой и второй страницах."""
         cache.clear()
         count_post = Post.objects.count()
@@ -141,17 +140,13 @@ class ViewsTest(TestCase):
 
     def test_cache(self):
         """Проверка работы кеша для главной страницы."""
-        response_before_cache = self.authorized_client.get(
-            reverse('posts:index'))
-        new_post = Post.objects.get(pk=1)
-        new_post.text = 'New text'
-        new_post.save()
-        self.assertEqual(response_before_cache.content,
+        page_content = self.authorized_client.get(INDEX_URL).content
+        Post.objects.all().delete()
+        self.assertEqual(page_content,
                          self.authorized_client.get(INDEX_URL).content)
         cache.clear()
-        response_clear_cache = self.authorized_client.get(INDEX_URL)
-        self.assertNotEqual(response_before_cache.content,
-                            response_clear_cache.content)
+        self.assertNotEqual(page_content,
+                            self.authorized_client.get(INDEX_URL).content)
 
 
 class FollowsViewsTest(TestCase):
@@ -176,8 +171,11 @@ class FollowsViewsTest(TestCase):
     def test_follow(self):
         """Авторизованный пользователь может подписаться"""
         self.assertEqual(Follow.objects.count(), 1)
-        self.assertTrue(Follow.objects.get(
-            author=self.second_user, user=self.first_user))
+        self.assertTrue(Follow.objects.filter(
+                user=self.first_user,
+                author=self.second_user
+            )
+        )
 
     def test_unfollow(self):
         self.follower_client.post(PROFILE_UNFOLLOW_URL)

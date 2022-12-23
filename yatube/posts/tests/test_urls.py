@@ -61,6 +61,8 @@ class PostURLTests(TestCase):
             (PROFILE_UNFOLLOW_URL, self.author2, PROFILE_URL),
             (PROFILE_FOLLOW_URL, self.client, LOG_PROFILE_FOLLOW_URL),
             (PROFILE_UNFOLLOW_URL, self.client, LOG_PROFILE_UNFOLLOW_URL),
+            (PROFILE_FOLLOW_URL, self.author, PROFILE_URL),
+            (PROFILE_UNFOLLOW_URL, self.author, PROFILE_URL),
         )
         for url, client, result_url in URLS:
             with self.subTest(url=url, result_url=result_url):

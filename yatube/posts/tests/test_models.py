@@ -72,5 +72,5 @@ class PostModelTest(TestCase):
         self.assertEqual(
             TEXT_FOLLOW.format(
                 user=self.follow.user.username,
-                author=str(self.follow.author)),
+                author=self.follow.author.username),
             str(self.follow))
