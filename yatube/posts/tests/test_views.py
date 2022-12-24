@@ -95,13 +95,12 @@ class ViewsTest(TestCase):
             (self.DETAIL_URL, 'post'),
             (FOLLOW_INDEX_URL, 'page_obj')
         )
-        count_post = Post.objects.count()
         for url, context in URLS:
             with self.subTest(url=url):
                 response = self.author2.get(url)
                 if context == 'page_obj':
                     paginator_page = response.context.get(context)
-                    self.assertEqual(len(list(paginator_page)), count_post)
+                    self.assertEqual(len(list(paginator_page)), 1)
                     post = paginator_page[0]
                 elif context == 'post':
                     post = response.context.get(context)
@@ -114,24 +113,24 @@ class ViewsTest(TestCase):
     def test_paginator_correct_context(self):
         """Проверка количества постов на первой и второй страницах."""
         cache.clear()
+        if Post.objects.count() < settings.FIRST_OF_POSTS:
+            Post.objects.bulk_create(Post(
+                text=f'Тестовый текст {i}',
+                group=self.group,
+                author=self.user,
+                image=self.image)
+                for i in range(settings.FIRST_OF_POSTS + 1)
+            )
         count_post = Post.objects.count()
-        Post.objects.bulk_create(Post(
-            text=f'Тестовый текст {i}',
-            group=self.group,
-            author=self.user,
-            image=self.image)
-            for i in range(settings.FIRST_OF_POSTS + 1)
-        )
-
         PAGES = (
             (INDEX_URL, settings.FIRST_OF_POSTS),
-            (f'{INDEX_URL}?page=2', count_post + 1),
+            (f'{INDEX_URL}?page=2', count_post - settings.FIRST_OF_POSTS),
             (GROUP_LIST_URL, settings.FIRST_OF_POSTS),
-            (f'{GROUP_LIST_URL}?page=2', count_post + 1),
+            (f'{GROUP_LIST_URL}?page=2', count_post - settings.FIRST_OF_POSTS),
             (PROFILE_URL, settings.FIRST_OF_POSTS),
-            (f'{PROFILE_URL}?page=2', count_post + 1),
+            (f'{PROFILE_URL}?page=2', count_post - settings.FIRST_OF_POSTS),
             (FOLLOW_INDEX_URL, settings.FIRST_OF_POSTS),
-            (f'{FOLLOW_INDEX_URL}?page=2', count_post + 1),
+            (f'{FOLLOW_INDEX_URL}?page=2', count_post - settings.FIRST_OF_POSTS),
         )
         for url, count_posts in PAGES:
             with self.subTest(url=url):
@@ -170,18 +169,14 @@ class FollowsViewsTest(TestCase):
 
     def test_follow(self):
         """Авторизованный пользователь может подписаться"""
-        self.assertEqual(Follow.objects.count(), 1)
-        self.assertTrue(Follow.objects.filter(
-            user=self.first_user,
-            author=self.second_user
-        ))
+        self.assertIn(
+            self.second_user.id,
+            self.first_user.follower.values_list('author', flat=True)
+        )
 
     def test_unfollow(self):
         self.follower_client.post(PROFILE_UNFOLLOW_URL)
-        self.assertEqual(Follow.objects.count(), 0)
-        self.assertFalse(
-            Follow.objects.filter(
-                user=self.first_user,
-                author=self.second_user
-            )
+        self.assertNotIn(
+            self.second_user.id,
+            self.first_user.follower.values_list('author', flat=True)
         )
