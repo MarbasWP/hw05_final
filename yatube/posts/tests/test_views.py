@@ -124,13 +124,17 @@ class ViewsTest(TestCase):
         count_post = Post.objects.count()
         PAGES = (
             (INDEX_URL, settings.FIRST_OF_POSTS),
-            (f'{INDEX_URL}?page=2', count_post - settings.FIRST_OF_POSTS),
+            (f'{INDEX_URL}?page=2',
+             count_post - settings.FIRST_OF_POSTS),
             (GROUP_LIST_URL, settings.FIRST_OF_POSTS),
-            (f'{GROUP_LIST_URL}?page=2', count_post - settings.FIRST_OF_POSTS),
+            (f'{GROUP_LIST_URL}?page=2',
+             count_post - settings.FIRST_OF_POSTS),
             (PROFILE_URL, settings.FIRST_OF_POSTS),
-            (f'{PROFILE_URL}?page=2', count_post - settings.FIRST_OF_POSTS),
+            (f'{PROFILE_URL}?page=2',
+             count_post - settings.FIRST_OF_POSTS),
             (FOLLOW_INDEX_URL, settings.FIRST_OF_POSTS),
-            (f'{FOLLOW_INDEX_URL}?page=2', count_post - settings.FIRST_OF_POSTS),
+            (f'{FOLLOW_INDEX_URL}?page=2',
+             count_post - settings.FIRST_OF_POSTS),
         )
         for url, count_posts in PAGES:
             with self.subTest(url=url):
