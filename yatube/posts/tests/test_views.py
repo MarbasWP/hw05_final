@@ -181,4 +181,3 @@ class ViewsTest(TestCase):
         follow_obj_after = Follow.objects.count()
         self.assertEqual(follow_obj_before - 1, follow_obj_after)
         self.assertFalse(subscription)
-
