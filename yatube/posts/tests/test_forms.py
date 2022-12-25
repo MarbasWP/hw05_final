@@ -16,7 +16,7 @@ PROFILE_URL = reverse('posts:profile', args=[USERNAME])
 GROUP_LIST_URL = reverse('posts:group_list', args=[SLUG])
 LOGIN_URL = f'{reverse("users:login")}?next='
 TEMP_MEDIA_ROOT = tempfile.mkdtemp(dir=settings.BASE_DIR)
-POST_UPLOAD_TO = f'{Post._meta.get_field("image").upload_to}'
+POST_UPLOAD_TO = Post._meta.get_field("image").upload_to
 SMALL_GIF = (
     b'\x47\x49\x46\x38\x39\x61\x02\x00'
     b'\x01\x00\x80\x00\x00\x00\x00\x00'

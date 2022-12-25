@@ -11,13 +11,17 @@ USERNAME2 = 'auth2'
 SLUG1 = 'Yandex'
 SLUG2 = 'Test_Group2'
 INDEX_URL = reverse('posts:index')
+INDEX_PAGE_2_URL = f"{reverse('posts:index')}?page=2"
 CREATE_URL = reverse('posts:post_create')
 PROFILE_URL = reverse('posts:profile', args=[USERNAME])
+PROFILE_PAGE_2_URL = f"{reverse('posts:profile', args=[USERNAME])}?page=2"
 GROUP_LIST_URL = reverse('posts:group_list', args=[SLUG1])
+GROUP_LIST_PAGE_2_URL = f"{reverse('posts:group_list', args=[SLUG1])}?page=2"
 GROUP_LIST_URL2 = reverse('posts:group_list', args=[SLUG2])
 PROFILE_FOLLOW_URL = reverse('posts:profile_follow', args=[USERNAME2])
 PROFILE_UNFOLLOW_URL = reverse('posts:profile_unfollow', args=[USERNAME2])
 FOLLOW_INDEX_URL = reverse('posts:follow_index')
+FOLLOW_INDEX_PAGE_2_URL = f"{reverse('posts:follow_index')}?page=2"
 SMALL_GIF = (
     b'\x47\x49\x46\x38\x39\x61\x02\x00'
     b'\x01\x00\x80\x00\x00\x00\x00\x00'
@@ -37,6 +41,7 @@ class ViewsTest(TestCase):
         cls.guest_client = Client()
         cls.authorized_client = Client()
         cls.author2 = Client()
+        cls.spectator = Client()
         cls.group = Group.objects.create(
             title='YandexPracticum',
             slug=SLUG1,
@@ -113,27 +118,27 @@ class ViewsTest(TestCase):
     def test_paginator_correct_context(self):
         """Проверка количества постов на первой и второй страницах."""
         cache.clear()
-        if Post.objects.count() < settings.FIRST_OF_POSTS:
-            Post.objects.bulk_create(Post(
-                text=f'Тестовый текст {i}',
-                group=self.group,
-                author=self.user,
-                image=self.image)
-                for i in range(settings.FIRST_OF_POSTS + 1)
-            )
+        Post.objects.all().delete()
+        Post.objects.bulk_create(Post(
+            text=f'Тестовый текст {i}',
+            group=self.group,
+            author=self.user,
+            image=self.image)
+            for i in range(settings.FIRST_OF_POSTS + 1)
+        )
         count_post = Post.objects.count()
         PAGES = (
             (INDEX_URL, settings.FIRST_OF_POSTS),
-            (f'{INDEX_URL}?page=2',
+            (INDEX_PAGE_2_URL,
              count_post - settings.FIRST_OF_POSTS),
             (GROUP_LIST_URL, settings.FIRST_OF_POSTS),
-            (f'{GROUP_LIST_URL}?page=2',
+            (GROUP_LIST_PAGE_2_URL,
              count_post - settings.FIRST_OF_POSTS),
             (PROFILE_URL, settings.FIRST_OF_POSTS),
-            (f'{PROFILE_URL}?page=2',
+            (PROFILE_PAGE_2_URL,
              count_post - settings.FIRST_OF_POSTS),
             (FOLLOW_INDEX_URL, settings.FIRST_OF_POSTS),
-            (f'{FOLLOW_INDEX_URL}?page=2',
+            (FOLLOW_INDEX_PAGE_2_URL,
              count_post - settings.FIRST_OF_POSTS),
         )
         for url, count_posts in PAGES:
@@ -151,36 +156,29 @@ class ViewsTest(TestCase):
         self.assertNotEqual(page_content,
                             self.authorized_client.get(INDEX_URL).content)
 
-
-class FollowsViewsTest(TestCase):
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-        cls.first_user = User.objects.create_user(username=USERNAME)
-        cls.second_user = User.objects.create_user(username=USERNAME2)
-        cls.post = Post.objects.create(
-            author=cls.first_user,
-            text='Тестовый текст',
-        )
-        cls.follow = Follow.objects.create(
-            user=cls.first_user,
-            author=cls.second_user
-        )
-        cls.author_client = Client()
-        cls.author_client.force_login(cls.second_user)
-        cls.follower_client = Client()
-        cls.follower_client.force_login(cls.first_user)
-
     def test_follow(self):
         """Авторизованный пользователь может подписаться"""
-        self.assertIn(
-            self.second_user.id,
-            self.first_user.follower.values_list('author', flat=True)
-        )
+        follow_obj_before = Follow.objects.count()
+        self.authorized_client.get(PROFILE_FOLLOW_URL)
+        subscription = Follow.objects.filter(
+            user=self.user,
+            author=self.user2).exists()
+        follow_obj_after = Follow.objects.count()
+        self.assertEqual(follow_obj_before + 1,
+                         follow_obj_after)
+        self.assertTrue(subscription)
 
-    def test_unfollow(self):
-        self.follower_client.post(PROFILE_UNFOLLOW_URL)
-        self.assertNotIn(
-            self.second_user.id,
-            self.first_user.follower.values_list('author', flat=True)
+    def test_unfollow_ability(self):
+        Follow.objects.create(
+            user=self.user,
+            author=self.user2
         )
+        follow_obj_before = Follow.objects.count()
+        self.authorized_client.get(PROFILE_UNFOLLOW_URL)
+        subscription = Follow.objects.filter(
+            user=self.user,
+            author=self.user2).exists()
+        follow_obj_after = Follow.objects.count()
+        self.assertEqual(follow_obj_before - 1, follow_obj_after)
+        self.assertFalse(subscription)
+
