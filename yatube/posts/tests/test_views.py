@@ -168,7 +168,7 @@ class ViewsTest(TestCase):
                          follow_obj_after)
         self.assertTrue(subscription)
 
-    def test_unfollow_ability(self):
+    def test_unfollow(self):
         Follow.objects.create(
             user=self.user,
             author=self.user2
