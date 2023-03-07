@@ -35,7 +35,12 @@
           {{ post.text|linebreaks }}
         </p>
         {% if post.author == user %}
-          <a href="{% url 'posts:post_edit' post.pk %}">Редактировать</a>
+          <form action="{% url 'posts:post_edit' post.pk %}">
+            <button type="submit" class="btn btn-primary">Редактировать</button>
+          </form>
+          <form action="{% url 'posts:post_delete' post.pk %}">
+            <button type="submit" class="btn btn-primary">Удалить</button>
+          </form>
         {% endif %}
     </div>
     {% include 'posts/includes/comments.html' %}

@@ -11,17 +11,17 @@ USERNAME2 = 'auth2'
 SLUG1 = 'Yandex'
 SLUG2 = 'Test_Group2'
 INDEX_URL = reverse('posts:index')
-INDEX_PAGE_2_URL = f"{reverse('posts:index')}?page=2"
+INDEX_PAGE_2_URL = f"{INDEX_URL}?page=2"
 CREATE_URL = reverse('posts:post_create')
 PROFILE_URL = reverse('posts:profile', args=[USERNAME])
-PROFILE_PAGE_2_URL = f"{reverse('posts:profile', args=[USERNAME])}?page=2"
+PROFILE_PAGE_2_URL = f"{PROFILE_URL}?page=2"
 GROUP_LIST_URL = reverse('posts:group_list', args=[SLUG1])
-GROUP_LIST_PAGE_2_URL = f"{reverse('posts:group_list', args=[SLUG1])}?page=2"
+GROUP_LIST_PAGE_2_URL = f"{GROUP_LIST_URL}?page=2"
 GROUP_LIST_URL2 = reverse('posts:group_list', args=[SLUG2])
 PROFILE_FOLLOW_URL = reverse('posts:profile_follow', args=[USERNAME2])
 PROFILE_UNFOLLOW_URL = reverse('posts:profile_unfollow', args=[USERNAME2])
 FOLLOW_INDEX_URL = reverse('posts:follow_index')
-FOLLOW_INDEX_PAGE_2_URL = f"{reverse('posts:follow_index')}?page=2"
+FOLLOW_INDEX_PAGE_2_URL = f"{FOLLOW_INDEX_URL}?page=2"
 SMALL_GIF = (
     b'\x47\x49\x46\x38\x39\x61\x02\x00'
     b'\x01\x00\x80\x00\x00\x00\x00\x00'
@@ -129,17 +129,13 @@ class ViewsTest(TestCase):
         count_post = Post.objects.count()
         PAGES = (
             (INDEX_URL, settings.FIRST_OF_POSTS),
-            (INDEX_PAGE_2_URL,
-             count_post - settings.FIRST_OF_POSTS),
+            (INDEX_PAGE_2_URL, 1),
             (GROUP_LIST_URL, settings.FIRST_OF_POSTS),
-            (GROUP_LIST_PAGE_2_URL,
-             count_post - settings.FIRST_OF_POSTS),
+            (GROUP_LIST_PAGE_2_URL, 1),
             (PROFILE_URL, settings.FIRST_OF_POSTS),
-            (PROFILE_PAGE_2_URL,
-             count_post - settings.FIRST_OF_POSTS),
+            (PROFILE_PAGE_2_URL, 1),
             (FOLLOW_INDEX_URL, settings.FIRST_OF_POSTS),
-            (FOLLOW_INDEX_PAGE_2_URL,
-             count_post - settings.FIRST_OF_POSTS),
+            (FOLLOW_INDEX_PAGE_2_URL, 1),
         )
         for url, count_posts in PAGES:
             with self.subTest(url=url):
